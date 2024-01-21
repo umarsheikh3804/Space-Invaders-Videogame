@@ -1,0 +1,184 @@
+
+
+
+ARM Macro Assembler    Page 1 
+
+
+    1 00000000         ; BusyWait.s
+    2 00000000         ; Student names: Umar Sheikh and Rithvik Kuthuru
+    3 00000000         ; Last modification date: change this to the last modifi
+                       cation date or look very silly
+    4 00000000         
+    5 00000000         ; Runs on TM4C123
+    6 00000000         
+    7 00000000         ; As part of Lab 7, students need to implement these two
+                        functions
+    8 00000000         ; This file is in the inc folder so it automatically wil
+                       l be applied to labs 7 8 9 and 10
+    9 00000000         
+   10 00000000         
+   11 00000000                 EXPORT           SPIOutCommand
+   12 00000000                 EXPORT           SPIOutData
+   13 00000000         
+   14 00000000                 AREA             |.text|, CODE, READONLY, ALIGN=
+2
+   15 00000000                 THUMB
+   16 00000000                 ALIGN
+   17 00000000         ; Used in ECE319K Labs 7,8,9,10. You write these two fun
+                       ctions
+   18 00000000         
+   19 00000000         ; ***********SPIOutCommand*****************
+   20 00000000         ; This is a helper function that sends an 8-bit command 
+                       to the LCD.
+   21 00000000         ; Inputs: R0 = 32-bit command (number)
+   22 00000000         ;         R1 = 32-bit SPI status register address
+   23 00000000         ;         R2 = 32-bit SPI data register address
+   24 00000000         ;         R3 = 32-bit GPIO port address for D/C
+   25 00000000         ; Outputs: none
+   26 00000000         ; Assumes: SPI and GPIO have already been initialized an
+                       d enabled
+   27 00000000         ; Note: must be AAPCS compliant
+   28 00000000         ; Note: access to bit 6 of GPIO must be friendly
+   29 00000000         SPIOutCommand
+   30 00000000         ; --UUU-- Code to write a command to the LCD
+   31 00000000         ;1) Read the SPI status register (R1 has address) and ch
+                       eck bit 4, 
+   32 00000000         ;2) If bit 4 is high, loop back to step 1 (wait for BUSY
+                        bit to be low)
+   33 00000000         ;3) Clear D/C (GPIO bit 6) to zero, be friendly (R3 has 
+                       address)
+   34 00000000         ;4) Write the command to the SPI data register (R2 has a
+                       ddress)
+   35 00000000         ;5) Read the SPI status register (R1 has address) and ch
+                       eck bit 4, 
+   36 00000000         ;6) If bit 4 is high, loop back to step 5 (wait for BUSY
+                        bit to be low)
+   37 00000000 B510            PUSH             {R4, LR}
+   38 00000002         wrap
+   39 00000002 680C            LDR              R4, [R1]
+   40 00000004 F004 0410       AND              R4, #0x10
+   41 00000008 2C10            CMP              R4, #0x10
+   42 0000000A D0FA            BEQ              wrap
+   43 0000000C 681C            LDR              R4, [R3]
+   44 0000000E F024 0440       BIC              R4, #0x40
+   45 00000012 601C            STR              R4, [R3]
+   46 00000014 7010            STRB             R0, [R2]
+
+
+
+ARM Macro Assembler    Page 2 
+
+
+   47 00000016         waitBusy
+   48 00000016 680A            LDR              R2, [R1]
+   49 00000018 F002 0210       AND              R2, #0x10
+   50 0000001C 2A10            CMP              R2, #0x10
+   51 0000001E D0FA            BEQ              waitBusy
+   52 00000020 E8BD 4010       POP              {R4, LR}
+   53 00000024 4770            BX               LR          ;   return
+   54 00000026         
+   55 00000026         
+   56 00000026         
+   57 00000026         ; ***********SPIOutData*****************
+   58 00000026         ; This is a helper function that sends an 8-bit data to 
+                       the LCD.
+   59 00000026         ; Inputs: R0 = 32-bit data (number)
+   60 00000026         ;         R1 = 32-bit SPI status register address
+   61 00000026         ;         R2 = 32-bit SPI data register address
+   62 00000026         ;         R3 = 32-bit GPIO port address for D/C
+   63 00000026         ; Outputs: none
+   64 00000026         ; Assumes: SPI and GPIO have already been initialized an
+                       d enabled
+   65 00000026         ; Note: must be AAPCS compliant
+   66 00000026         ; Note: access to bit 6 of GPIO must be friendly
+   67 00000026         SPIOutData
+   68 00000026         ; --UUU-- Code to write data to the LCD
+   69 00000026         ;1) Read the SPI status register (R1 has address) and ch
+                       eck bit 1, 
+   70 00000026         ;2) If bit 1 is low, loop back to step 1 (wait for TNF b
+                       it to be high)
+   71 00000026         ;3) Set D/C (GPIO bit 6) to one, be friendly (R3 has add
+                       ress)
+   72 00000026         ;4) Write the data to the SPI data register (R2 has addr
+                       ess)
+   73 00000026 B510            PUSH             {R4, LR}
+   74 00000028         loop
+   75 00000028 680C            LDR              R4, [R1]
+   76 0000002A F004 0402       AND              R4, #0x02
+   77 0000002E 2C02            CMP              R4, #0x02
+   78 00000030 D1FA            BNE              loop
+   79 00000032 681C            LDR              R4, [R3]
+   80 00000034 F044 0440       ORR              R4, #0x40
+   81 00000038 601C            STR              R4, [R3]
+   82 0000003A 7010            STRB             R0, [R2]
+   83 0000003C E8BD 4010       POP              {R4, LR}
+   84 00000040 4770            BX               LR
+   85 00000042         ;****************************************************
+   86 00000042         
+   87 00000042 00 00           ALIGN                        ; make sure the end
+                                                             of this section is
+                                                             aligned
+   88 00000044                 END                          ; end of file
+Command Line: --debug --xref --diag_suppress=9931,A1950W --cpu=Cortex-M4 --fpu=
+SoftVFP --depend=.\busywait.d -o.\busywait.o -I.\RTE\_SpaceInvaders -I"C:\Users
+\Umar Sheikh\AppData\Local\Arm\Packs\ARM\CMSIS\5.9.0\CMSIS\Core\Include" -I"C:\
+Users\Umar Sheikh\AppData\Local\Arm\Packs\Keil\TM4C_DFP\1.1.0\Device\Include\TM
+4C123" --predefine="__EVAL SETA 1" --predefine="__UVISION_VERSION SETA 538" --p
+redefine="_RTE_ SETA 1" --predefine="TM4C123GH6PM SETA 1" --predefine="_RTE_ SE
+TA 1" --list=.\busywait.lst ..\inc\BusyWait.s
+
+
+
+ARM Macro Assembler    Page 1 Alphabetic symbol ordering
+Relocatable symbols
+
+.text 00000000
+
+Symbol: .text
+   Definitions
+      At line 14 in file ..\inc\BusyWait.s
+   Uses
+      None
+Comment: .text unused
+SPIOutCommand 00000000
+
+Symbol: SPIOutCommand
+   Definitions
+      At line 29 in file ..\inc\BusyWait.s
+   Uses
+      At line 11 in file ..\inc\BusyWait.s
+Comment: SPIOutCommand used once
+SPIOutData 00000026
+
+Symbol: SPIOutData
+   Definitions
+      At line 67 in file ..\inc\BusyWait.s
+   Uses
+      At line 12 in file ..\inc\BusyWait.s
+Comment: SPIOutData used once
+loop 00000028
+
+Symbol: loop
+   Definitions
+      At line 74 in file ..\inc\BusyWait.s
+   Uses
+      At line 78 in file ..\inc\BusyWait.s
+Comment: loop used once
+waitBusy 00000016
+
+Symbol: waitBusy
+   Definitions
+      At line 47 in file ..\inc\BusyWait.s
+   Uses
+      At line 51 in file ..\inc\BusyWait.s
+Comment: waitBusy used once
+wrap 00000002
+
+Symbol: wrap
+   Definitions
+      At line 38 in file ..\inc\BusyWait.s
+   Uses
+      At line 42 in file ..\inc\BusyWait.s
+Comment: wrap used once
+6 symbols
+340 symbols in table
